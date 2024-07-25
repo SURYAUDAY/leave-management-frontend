@@ -168,7 +168,7 @@ const App = () => {
     const uniqueWithMinMax = unique.map((event) => {
       const filteredEvents = events.filter((e) => e.title === event.title);
       const minStart = moment.min(filteredEvents.map((e) => moment(e.start)));
-      const maxEnd = moment.max(filteredEvents.map((e ) => moment(e.end)));
+      const maxEnd = moment.max(filteredEvents.map((e) => moment(e.end)));
       return {
         ...event,
         minStart: minStart.toDate(),
