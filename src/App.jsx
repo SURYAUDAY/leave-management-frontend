@@ -3,7 +3,7 @@ import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import axios from "axios";
-import { Box, Modal, Typography, Button, TextField } from "@mui/material";
+import { Box, Modal, Typography, Button, TextField, CircularProgress } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
@@ -24,6 +24,8 @@ const App = () => {
   const [uniqueEvents, setUniqueEvents] = useState([]);
   const [multipleEvents, setMultipleEvents] = useState([]);
   const [showMoreDate, setShowMoreDate] = useState(null);
+  const [loading, setLoading] = useState(false); // New state for loading
+  const [deleteLoading, setDeleteLoading] = useState(false); // New state for loading
 
   useEffect(() => {
     fetchEvents();
@@ -120,7 +122,7 @@ const App = () => {
         reason: leaveReason, // Include reason
       };
       const splitEvents = splitEventIntoDays(newEvent);
-
+      setLoading(true);
       try {
         if (selectEvent) {
           await axios.put(
@@ -137,6 +139,7 @@ const App = () => {
       } catch (error) {
         console.error("Error saving event", error);
       }
+      setLoading(false);
       setShowModal(false);
       setEventTitle("");
       setStartDate(null);
@@ -148,6 +151,7 @@ const App = () => {
 
   const deleteEvent = async () => {
     if (selectEvent) {
+      setDeleteLoading(true);
       try {
         await axios.delete(
           `${import.meta.env.VITE_API_URL}/events/${selectEvent.id}`
@@ -156,6 +160,7 @@ const App = () => {
       } catch (error) {
         console.error("Error deleting event", error);
       }
+      setDeleteLoading(false);
       setShowModal(false);
       setEventTitle("");
       setStartDate(null);
@@ -317,11 +322,11 @@ const App = () => {
               <Box
                 sx={{ display: "flex", justifyContent: selectEvent ? "space-between" : "center", mt: 2 }}
               >
-                {selectEvent ? <Button variant="contained" color="error" onClick={deleteEvent}>
-                  Delete
+                {selectEvent ? <Button variant="contained" color="error" onClick={deleteEvent} disabled={deleteLoading}>
+                  {deleteLoading ? <CircularProgress size={24} /> : "Delete"}
                 </Button> : null}
-                <Button variant="contained" onClick={saveEvent}>
-                  Save
+                <Button variant="contained" onClick={saveEvent} disabled={loading}>
+                  {loading ? <CircularProgress size={24} /> : "Save"}
                 </Button>
               </Box>
             </Box>
@@ -475,6 +480,7 @@ const App = () => {
                       variant="contained"
                       color="error"
                       onClick={async () => {
+                        setDeleteLoading(true);
                         try {
                           await axios.delete(
                             `${import.meta.env.VITE_API_URL}/events/${event.id}`
@@ -484,9 +490,11 @@ const App = () => {
                         } catch (error) {
                           console.error("Error deleting event", error);
                         }
+                        setDeleteLoading(false);
                       }}
+                      disabled={loading}
                     >
-                      Delete
+                      {deleteLoading ? <CircularProgress size={24} /> : "Delete"}
                     </Button>
                   </Box>
                 </Box>
@@ -494,15 +502,6 @@ const App = () => {
             </Box>
           </Box>
         </Modal>
-
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mt: 2,
-          }}
-        ></Box>
       </div>
     </>
   );
