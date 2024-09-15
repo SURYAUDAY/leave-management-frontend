@@ -30,3 +30,9 @@
 .MuiDayCalendar-weekContainer{
   margin: 0px !important;
 }
+
+.MuiPaper-root{
+  position: absolute !important;
+  top: -250px !important;
+  left: 200px !important;
+}
