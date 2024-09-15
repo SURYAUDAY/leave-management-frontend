@@ -2,9 +2,14 @@
     display: none;
   }
 
-  .rbc-btn-group > button:first-child:not(:last-child) {
-    border-top-right-radius: 3px;
-    border-bottom-right-radius: 3px;
+  .rbc-btn-group:nth-child(3) button.rbc-active {
+    display: none;
+}
+
+.rbc-btn-group > button {
+  height: 35px;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 *{
@@ -13,5 +18,15 @@
 }
 
 .rbc-toolbar-label{
-  font-size: 30px;
+  font-size: 35px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.MuiDateCalendar-root{
+  height: 290px !important;
+}
+
+.MuiDayCalendar-weekContainer{
+  margin: 0px !important;
 }

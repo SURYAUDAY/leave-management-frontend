@@ -3,16 +3,11 @@ import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import axios from "axios";
-import {
-  Box,
-  Modal,
-  Typography,
-  Button,
-  TextField,
-} from "@mui/material";
+import { Box, Modal, Typography, Button, TextField } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
+import CloseIcon from "@mui/icons-material/Close";
 
 const localizer = momentLocalizer(moment);
 
@@ -24,6 +19,7 @@ const App = () => {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [eventTitle, setEventTitle] = useState("");
+  const [leaveReason, setLeaveReason] = useState(""); // New state for leave reason
   const [selectEvent, setSelectEvent] = useState(null);
   const [uniqueEvents, setUniqueEvents] = useState([]);
   const [multipleEvents, setMultipleEvents] = useState([]);
@@ -35,7 +31,9 @@ const App = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/events`);
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/events`
+      );
       setEvents(response.data);
       const uniqueEventsList = getUniqueEvents(response.data);
       setUniqueEvents(uniqueEventsList);
@@ -49,6 +47,7 @@ const App = () => {
     setStartDate(null);
     setEndDate(null);
     setSelectEvent(null);
+    setLeaveReason(""); // Reset leave reason
   };
 
   const handleSelectedEvent = (event) => {
@@ -64,11 +63,12 @@ const App = () => {
       setEventTitle(event.title);
       setStartDate(moment(event.start));
       setEndDate(moment(event.end));
+      setLeaveReason(event.reason || ""); // Set leave reason if available
     }
   };
 
   const splitEventIntoDays = (event) => {
-    const { title, start, end } = event;
+    const { title, start, end, reason } = event;
     const events = [];
 
     let current = moment(start).startOf("day");
@@ -83,18 +83,21 @@ const App = () => {
           title,
           start: start,
           end: eventEnd,
+          reason, // Include reason
         });
       } else if (current.isSame(endDate)) {
         events.push({
           title,
           start: eventStart,
           end: end,
+          reason, // Include reason
         });
       } else {
         events.push({
           title,
           start: eventStart,
           end: eventEnd,
+          reason, // Include reason
         });
       }
 
@@ -105,7 +108,7 @@ const App = () => {
   };
 
   const saveEvent = async () => {
-    if (eventTitle && startDate && endDate) {
+    if (eventTitle && startDate && endDate && leaveReason) {
       if (startDate.isAfter(endDate)) {
         alert("End date cannot be before the start date.");
         return;
@@ -114,14 +117,21 @@ const App = () => {
         title: eventTitle,
         start: startDate.toDate(),
         end: endDate.toDate(),
+        reason: leaveReason, // Include reason
       };
       const splitEvents = splitEventIntoDays(newEvent);
 
       try {
         if (selectEvent) {
-          await axios.put(`${import.meta.env.VITE_API_URL}/events/${selectEvent.id}`, splitEvents[0]);
+          await axios.put(
+            `${import.meta.env.VITE_API_URL}/events/${selectEvent.id}`,
+            splitEvents[0]
+          );
         } else {
-          await axios.post(`${import.meta.env.VITE_API_URL}/events`, splitEvents);
+          await axios.post(
+            `${import.meta.env.VITE_API_URL}/events`,
+            splitEvents
+          );
         }
         fetchEvents();
       } catch (error) {
@@ -131,6 +141,7 @@ const App = () => {
       setEventTitle("");
       setStartDate(null);
       setEndDate(null);
+      setLeaveReason(""); // Reset leave reason
       setSelectEvent(null);
     }
   };
@@ -138,7 +149,9 @@ const App = () => {
   const deleteEvent = async () => {
     if (selectEvent) {
       try {
-        await axios.delete(`${import.meta.env.VITE_API_URL}/events/${selectEvent.id}`);
+        await axios.delete(
+          `${import.meta.env.VITE_API_URL}/events/${selectEvent.id}`
+        );
         fetchEvents();
       } catch (error) {
         console.error("Error deleting event", error);
@@ -147,6 +160,7 @@ const App = () => {
       setEventTitle("");
       setStartDate(null);
       setEndDate(null);
+      setLeaveReason(""); // Reset leave reason
       setSelectEvent(null);
     }
   };
@@ -161,6 +175,7 @@ const App = () => {
           title: item.title,
           start: item.start,
           end: item.end,
+          reason: item.reason, // Include reason
         });
       }
     });
@@ -182,7 +197,9 @@ const App = () => {
   const handleDrillDown = async (date, view) => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/events?date=${moment(date).format("YYYY-MM-DD")}`
+        `${import.meta.env.VITE_API_URL}/events?date=${moment(date).format(
+          "YYYY-MM-DD"
+        )}`
       );
       setShowMoreDate(date);
       setEvents(response.data);
@@ -191,34 +208,129 @@ const App = () => {
     }
   };
 
+  console.log(leaveReason, "leaveReason")
+
   return (
     <>
-    <Box sx={{height: "60px", backgroundColor: "lightblue", fontSize: "30px", display: "flex", alignItems: "center", paddingLeft: "20px"}}>
-     <b>NIQ Leave Portal</b>
-    </Box>
-    <div style={{ height: "500px" }}>
-      <Calendar
-        localizer={localizer}
-        events={events}
-        startAccessor="start"
-        endAccessor="end"
-        style={{ margin: "50px" }}
-        selectable={true}
-        onSelectSlot={handleSelectSlot}
-        onSelectEvent={handleSelectedEvent}
-        onDrillDown={handleDrillDown}
-      />
+      <Box
+        sx={{
+          height: "60px",
+          backgroundColor: "lightblue",
+          fontSize: "30px",
+          display: "flex",
+          alignItems: "center",
+          paddingLeft: "20px",
+        }}
+      >
+        <b>NIQ Leave Portal</b>
+      </Box>
+      <div style={{ height: "500px" }}>
+        <Calendar
+          localizer={localizer}
+          events={events}
+          startAccessor="start"
+          endAccessor="end"
+          style={{ margin: "50px" }}
+          selectable={true}
+          onSelectSlot={handleSelectSlot}
+          onSelectEvent={handleSelectedEvent}
+          onDrillDown={handleDrillDown}
+        />
 
-      {showModal && (
+        {showModal && (
+          <Modal
+            open={showModal}
+            onClose={() => {
+              setShowModal(false);
+              setEventTitle("");
+              setStartDate(null);
+              setEndDate(null);
+              setLeaveReason(""); // Reset leave reason
+              setSelectEvent(null);
+            }}
+            aria-labelledby="modal-modal-title"
+            aria-describedby="modal-modal-description"
+          >
+            <Box
+              sx={{
+                position: "absolute",
+                top: "35%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: 400,
+                bgcolor: "background.paper",
+                border: "2px solid #000",
+                boxShadow: 24,
+                padding: "30px",
+                borderRadius: "10px",
+              }}
+            >
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Typography id="modal-modal-title" variant="h6" component="h2">
+                  {selectEvent ? "Edit Leave" : "Apply Leave"}
+                </Typography>
+                <CloseIcon
+                  onClick={() => {
+                    setShowModal(false);
+                    setEventTitle("");
+                    setStartDate(null);
+                    setEndDate(null);
+                    setLeaveReason(""); // Reset leave reason
+                    setSelectEvent(null);
+                  }}
+                />
+              </Box>
+              <TextField
+                fullWidth
+                margin="normal"
+                label={selectEvent ? "Edit Name" : "Employee Name"}
+                value={eventTitle}
+                onChange={(e) => setEventTitle(e.target.value)}
+              />
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Leave Reason"
+                value={leaveReason}
+                onChange={(e) => setLeaveReason(e.target.value)}
+              />
+              <LocalizationProvider dateAdapter={AdapterMoment}>
+                <Box sx={{ display: "flex", gap: 2, marginTop: 2 }}>
+                  <DatePicker
+                    label="Start Date"
+                    value={startDate}
+                    onChange={(newValue) => setStartDate(newValue)}
+                    renderInput={(params) => (
+                      <TextField fullWidth margin="normal" {...params} />
+                    )}
+                  />
+                  <DatePicker
+                    label="End Date"
+                    value={endDate}
+                    onChange={(newValue) => setEndDate(newValue)}
+                    renderInput={(params) => (
+                      <TextField fullWidth margin="normal" {...params} />
+                    )}
+                  />
+                </Box>
+              </LocalizationProvider>
+              <Box
+                sx={{ display: "flex", justifyContent: selectEvent ? "space-between" : "center", mt: 2 }}
+              >
+                {selectEvent ? <Button variant="contained" color="error" onClick={deleteEvent}>
+                  Delete
+                </Button> : null}
+                <Button variant="contained" onClick={saveEvent}>
+                  Save
+                </Button>
+              </Box>
+            </Box>
+          </Modal>
+        )}
+
         <Modal
-          open={showModal}
-          onClose={() => {
-            setShowModal(false);
-            setEventTitle("");
-            setStartDate(null);
-            setEndDate(null);
-            setSelectEvent(null);
-          }}
+          open={showActiveEventsModal}
+          onClose={() => setShowActiveEventsModal(false)}
           aria-labelledby="modal-modal-title"
           aria-describedby="modal-modal-description"
         >
@@ -232,171 +344,166 @@ const App = () => {
               bgcolor: "background.paper",
               border: "2px solid #000",
               boxShadow: 24,
-              p: 4,
+              padding: "30px",
+              borderRadius: "10px",
             }}
           >
-            <Typography id="modal-modal-title" variant="h6" component="h2">
-              {selectEvent ? "Edit Leave" : "Apply Leave"}
-            </Typography>
-            <TextField
-              fullWidth
-              margin="normal"
-              label={selectEvent ? "Edit Name" : "Employee Name"}
-              value={eventTitle}
-              onChange={(e) => setEventTitle(e.target.value)}
-            />
-            <LocalizationProvider dateAdapter={AdapterMoment}>
-              <Box sx={{ display: "flex", gap: 2, marginTop: 2 }}>
-                <DatePicker
-                  label="Start Date"
-                  value={startDate}
-                  onChange={(newValue) => setStartDate(newValue)}
-                  disablePast
-                  renderInput={(params) => (
-                    <TextField fullWidth margin="normal" {...params} />
-                  )}
-                />
-                <DatePicker
-                  label="End Date"
-                  value={endDate}
-                  onChange={(newValue) => setEndDate(newValue)}
-                  disablePast
-                  renderInput={(params) => (
-                    <TextField fullWidth margin="normal" {...params} />
-                  )}
-                />
-              </Box>
-            </LocalizationProvider>
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Typography id="modal-modal-title" variant="h6" component="h2">
+                Current leave active on{" "}
+                {showMoreDate ? moment(showMoreDate).format("LL") : ""}
+              </Typography>
+              <CloseIcon
+                onClick={() => {
+                  setShowActiveEventsModal(false);
+                  setEventTitle("");
+                  setStartDate(null);
+                  setEndDate(null);
+                  setLeaveReason(""); // Reset leave reason
+                  setSelectEvent(null);
+                }}
+              />
+            </Box>
+            {uniqueEvents
+              .filter(
+                (event) =>
+                  moment(event.minStart).isSameOrBefore(showMoreDate) &&
+                  moment(event.maxEnd).isSameOrAfter(showMoreDate)
+              )
+              .map((event) => (
+                <Box
+                  key={event.title}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mt: 2,
+                  }}
+                >
+                  <Typography>{event.title}</Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      setEventTitle(event.title);
+                      setStartDate(moment(event.minStart));
+                      setEndDate(moment(event.maxEnd));
+                      setLeaveReason(event.reason || ""); // Set leave reason if available
+                      setSelectEvent(event);
+                      setShowModal(true);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                </Box>
+              ))}
+          </Box>
+        </Modal>
+
+        <Modal
+          open={showMultipleEventsModal}
+          onClose={() => setShowMultipleEventsModal(false)}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 400,
+              bgcolor: "background.paper",
+              border: "2px solid #000",
+              boxShadow: 24,
+              padding: "30px",
+              borderRadius: "10px",
+            }}
+          >
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+              <Typography id="modal-modal-title" variant="h6" component="h2">
+                Employee on leave on{" "}
+                {moment(multipleEvents[0]?.start).format("DD-MMMM")}
+              </Typography>
+              <CloseIcon
+                onClick={() => {
+                  setShowMultipleEventsModal(false);
+                  setEventTitle("");
+                  setStartDate(null);
+                  setEndDate(null);
+                  setLeaveReason(""); // Reset leave reason
+                  setSelectEvent(null);
+                }}
+              />
+            </Box>
             <Box
-              sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}
+              sx={{
+                height: "250px",
+                overflowY: "auto",
+                scrollbarWidth: "thin",
+              }}
             >
-              {selectEvent && (
-                <Button variant="contained" color="error" onClick={deleteEvent}>
-                  Delete Leave
-                </Button>
-              )}
-              <Button variant="contained" onClick={saveEvent}>
-                Save
-              </Button>
+              {multipleEvents.map((event, index) => (
+                <Box
+                  key={event.title + event.start}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mt: 2,
+                    mr: 2,
+                  }}
+                >
+                  <Typography>{`${index + 1}. ${event.title}`}</Typography>
+                  <Box sx={{ display: "flex", gap: 2 }}>
+                    <Button
+                      sx={{ height: "30px", width: "50px", fontSize: "12px" }}
+                      variant="contained"
+                      onClick={() => {
+                        setEventTitle(event.title);
+                        setStartDate(moment(event.start));
+                        setEndDate(moment(event.end));
+                        setLeaveReason(event.reason || ""); // Set leave reason if available
+                        setSelectEvent(event);
+                        setShowModal(true);
+                        setShowMultipleEventsModal(false);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      sx={{ height: "30px", width: "50px", fontSize: "12px" }}
+                      variant="contained"
+                      color="error"
+                      onClick={async () => {
+                        try {
+                          await axios.delete(
+                            `${import.meta.env.VITE_API_URL}/events/${event.id}`
+                          );
+                          fetchEvents();
+                          setShowMultipleEventsModal(false);
+                        } catch (error) {
+                          console.error("Error deleting event", error);
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </Box>
+                </Box>
+              ))}
             </Box>
           </Box>
         </Modal>
-      )}
 
-      <Modal
-        open={showActiveEventsModal}
-        onClose={() => setShowActiveEventsModal(false)}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
         <Box
           sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 400,
-            bgcolor: "background.paper",
-            border: "2px solid #000",
-            boxShadow: 24,
-            p: 4,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mt: 2,
           }}
-        >
-          <Typography id="modal-modal-title" variant="h6" component="h2">
-            Current leave active on {showMoreDate ? moment(showMoreDate).format("LL") : ""}
-          </Typography>
-          {uniqueEvents
-            .filter((event) => moment(event.minStart).isSameOrBefore(showMoreDate) && moment(event.maxEnd).isSameOrAfter(showMoreDate))
-            .map((event) => (
-              <Box
-                key={event.title}
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mt: 2,
-                }}
-              >
-                <Typography>{event.title}</Typography>
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    setEventTitle(event.title);
-                    setStartDate(moment(event.minStart));
-                    setEndDate(moment(event.maxEnd));
-                    setSelectEvent(event);
-                    setShowModal(true);
-                  }}
-                >
-                  Edit
-                </Button>
-              </Box>
-            ))}
-        </Box>
-      </Modal>
-
-      <Modal
-        open={showMultipleEventsModal}
-        onClose={() => setShowMultipleEventsModal(false)}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 400,
-            bgcolor: "background.paper",
-            border: "2px solid #000",
-            boxShadow: 24,
-            p: 4,
-          }}
-        >
-          <Typography id="modal-modal-title" variant="h6" component="h2">
-          Employee on leave on{" "}
-                    {moment(multipleEvents[0]?.start).format("DD-MMMM")}
-          </Typography>
-          {multipleEvents.map((event, index) => (
-            <Box
-              key={event.title + event.start}
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mt: 2,
-              }}
-            >
-              <Typography>{`${index+1}. ${event.title}`}</Typography>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  setEventTitle(event.title);
-                  setStartDate(moment(event.start));
-                  setEndDate(moment(event.end));
-                  setSelectEvent(event);
-                  setShowModal(true);
-                  setShowMultipleEventsModal(false)
-                }}
-              >
-                Edit
-              </Button>
-            </Box>
-          ))}
-        </Box>
-      </Modal>
-
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mt: 2,
-        }}
-      >
-      </Box>
-    </div>
+        ></Box>
+      </div>
     </>
   );
 };
