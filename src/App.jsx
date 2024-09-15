@@ -213,8 +213,6 @@ const App = () => {
     }
   };
 
-  console.log(leaveReason, "leaveReason")
-
   return (
     <>
       <Box
