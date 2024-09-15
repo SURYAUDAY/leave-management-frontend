@@ -218,7 +218,8 @@ const App = () => {
       <Box
         sx={{
           height: "60px",
-          backgroundColor: "lightblue",
+          backgroundColor: "black",
+          color: "white",
           fontSize: "30px",
           display: "flex",
           alignItems: "center",
